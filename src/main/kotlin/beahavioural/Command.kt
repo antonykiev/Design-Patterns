@@ -1,121 +1,103 @@
 package beahavioural
 
 /**
- * Definition
- * The Command Design Pattern is a software design pattern that allows the encapsulation of a request as an object.
- * This enables the client to parameterize and execute the request at a later time. This pattern is useful when
- * building applications where the client needs to queue, log, or undo operations.
+ * The Command design pattern is a behavioral design pattern that encapsulates a request as an object,
+ * thereby allowing for parameterization of clients with queues, requests, and operations.
  *
- * Example
- * https://www.baeldung.com/kotlin/command-design-pattern
+ * Advantages:
+ *
+ *     Decoupling: It separates the requester of an operation from the object that executes the operation,
+ *     promoting loose coupling between sender and receiver.
+ *
+ *     Flexibility: Commands can be easily extended, added, or modified without affecting the client's code,
+ *     allowing for easier maintenance and updates.
+ *
+ *     Undo/Redo Functionality: The pattern allows for easy implementation of undo and redo operations by
+ *     storing command history.
+ *
+ *     Queueing and Logging: Commands can be queued for execution, enabling features like logging,
+ *     transactional behavior, and support for rollback mechanisms.
+ *
+ *     Collaboration: It promotes collaboration between objects by making them unaware of each other's
+ *     implementation details, allowing them to work together effectively.
+ *
+ * Disadvantages:
+ *
+ *     Increased Complexity: Implementing the Command pattern can introduce additional classes, leading to increased
+ *     code complexity and potentially reduced readability.
+ *
+ *     Overhead: The use of Command objects might lead to increased memory consumption, especially when dealing
+ *     with a large number of commands.
+ *
+ *     Maintenance Challenges: As the number of commands increases, managing and maintaining command classes might
+ *     become cumbersome.
+ *
+ *     Potential Performance Impact: Depending on the implementation, there might be a performance overhead
+ *     due to the creation and management of command objects.
+ *
+ *     Design Overkill: For simple tasks or applications, applying the Command pattern might be unnecessary
+ *     and could introduce unnecessary complexity.
+ *
+ * While the Command design pattern offers several advantages in terms of flexibility, decoupling, and enabling
+ * features like undo/redo functionality, it's essential to weigh these benefits against the potential drawbacks,
+ * such as increased complexity and maintenance challenges, to determine its suitability for a particular
+ * application or system.
  */
+
+
 fun main() {
-    val clipboard = Clipboard()
-    val editor = TextEditor("Baeldung")
-    val invoker = TextEditorInvoker()
+    val light = Light()
 
-    invoker.executeCommand(CutCommand(editor, clipboard)) // cuts last character of initial content to clipboard
-    invoker.executeCommand(CopyCommand(editor, clipboard)) // copies current content to clipboard
-    invoker.executeCommand(PasteCommand(editor, clipboard)) // pastes current clipboard content to text editor
+    val turnOnCommand = TurnOnCommand(light)
+    val turnOffCommand = TurnOffCommand(light)
 
-    editor.print() // prints "BaeldunBaeldun"
+    val remote = RemoteControl()
 
-    invoker.undo() // undoes the paste command
+    remote.setCommand(turnOnCommand)
+    remote.pressButton() // Output: Light is turned on
 
-    editor.print() // prints "Baeldun"
-
+    remote.setCommand(turnOffCommand)
+    remote.pressButton() // Output: Light is turned off
 }
 
+// Receiver
+class Light {
+    fun turnOn() {
+        println("Light is turned on")
+    }
+
+    fun turnOff() {
+        println("Light is turned off")
+    }
+}
+
+// Command interface
 interface Command {
     fun execute()
-    fun undo()
 }
 
-class CutCommand(
-    private val receiver: TextEditor,
-    private val clipboard: Clipboard
-) : Command {
-
+// Concrete commands
+class TurnOnCommand(private val light: Light) : Command {
     override fun execute() {
-        clipboard.content = receiver.cut()
-    }
-
-    override fun undo() {
-        receiver.write(clipboard.content)
-        clipboard.content = ""
+        light.turnOn()
     }
 }
 
-class CopyCommand(
-    private val receiver: TextEditor,
-    private val clipboard: Clipboard
-) : Command {
-
+class TurnOffCommand(private val light: Light) : Command {
     override fun execute() {
-        clipboard.content = receiver.copy()
-    }
-
-    override fun undo() {
-        clipboard.content = ""
+        light.turnOff()
     }
 }
 
-class PasteCommand(
-    private val receiver: TextEditor,
-    private val clipboard: Clipboard
-) : Command {
+// Invoker
+class RemoteControl {
+    private var command: Command? = null
 
-    override fun execute() {
-        receiver.write(clipboard.content)
+    fun setCommand(cmd: Command) {
+        command = cmd
     }
 
-    override fun undo() {
-        receiver.delete(clipboard.content)
-    }
-}
-
-class TextEditorInvoker {
-    private val commands = mutableListOf<Command>()
-
-    fun executeCommand(command: Command) {
-        commands.add(command)
-        command.execute()
-    }
-
-    fun undo() {
-        if (commands.isNotEmpty()) {
-            commands.removeLast().undo()
-        }
+    fun pressButton() {
+        command?.execute()
     }
 }
-
-class TextEditor(initialContent: String) {
-
-    private var content = initialContent
-
-    fun cut(): String {
-        val cutContent = content.takeLast(1)
-        content = content.dropLast(1)
-        return cutContent
-    }
-
-    fun copy(): String {
-        return String(content.toCharArray())
-    }
-
-    fun write(text: String) {
-        content += text
-    }
-
-    fun delete(text: String) {
-        content = content.removeSuffix(text)
-    }
-
-    fun print() {
-        println(content)
-    }
-}
-
-data class Clipboard(var content: String = "")
-
-

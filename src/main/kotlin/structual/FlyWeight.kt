@@ -1,107 +1,91 @@
 package structual
 
-import structual.CarFactory.getRaceCar
+/**
+ * The Flyweight design pattern is a structural pattern that minimizes memory usage and improves performance by
+ * sharing objects with similar intrinsic characteristics. Here are its advantages and disadvantages:
+ * Advantages:
+ *
+ *     Memory Efficiency: Reduces memory usage by sharing common data/state among multiple objects, especially
+ *     when dealing with a large number of similar objects.
+ *
+ *     Performance Improvement: Improves performance by reusing shared objects instead of creating new instances,
+ *     reducing object creation overhead.
+ *
+ *     Reduction in Object Count: Reduces the overall number of objects in the system by sharing common state,
+ *     leading to a more efficient use of resources.
+ *
+ *     Enhanced Scalability: Allows the system to handle a larger number of objects without exhausting memory resources,
+ *     improving system scalability.
+ *
+ *     Simplified Object Creation: Separates intrinsic and extrinsic state, simplifying the creation of objects
+ *     by focusing on the unique extrinsic state.
+ *
+ * Disadvantages:
+ *
+ *     Increased Complexity: Implementing the Flyweight pattern may introduce additional complexity, especially when
+ *     managing shared state and ensuring proper object identity.
+ *
+ *     State Management Challenges: Managing shared state across multiple objects can become complex and error-prone,
+ *     especially in concurrent or multithreaded environments.
+ *
+ *     Potential Trade-off with CPU Usage: While the pattern reduces memory usage, it might lead to increased CPU usage
+ *     due to additional processing required for sharing and managing state.
+ *
+ *     Limits in Sharing: Not all objects may be suitable for sharing common state, and determining which state
+ *     to share can be challenging.
+ *
+ *     Maintaining Object Integrity: Ensuring that changes to shared state do not affect the integrity of other objects
+ *     sharing that state can be difficult to manage.
+ *
+ * The Flyweight pattern is beneficial in scenarios where a large number of similar objects need to be managed efficiently,
+ * leading to reduced memory usage and improved performance. However, the implementation complexity and challenges
+ * in managing shared state should be carefully considered when deciding to use the pattern in a particular context.
+ *
+ */
 
-fun main(args: Array<String>) {
-    val raceCars = arrayOf(
-        RaceCarClient("Midget"),
-        RaceCarClient("Midget"),
-        RaceCarClient("Midget"),
-        RaceCarClient("Sprint"),
-        RaceCarClient("Sprint"),
-        RaceCarClient("Sprint")
+
+// Client code
+fun main() {
+    val factory = CoffeeFlavorFactory()
+
+    // Orders for coffee flavors
+    val orders = listOf(
+        "Espresso", "Cappuccino", "Latte", "Espresso", "Espresso",
+        "Cappuccino", "Cappuccino", "Latte", "Latte", "Espresso"
     )
-    raceCars[0].moveCar(29, 3112)
-    raceCars[1].moveCar(39, 2002)
-    raceCars[2].moveCar(49, 1985)
-    raceCars[3].moveCar(59, 2543)
-    raceCars[4].moveCar(69, 2322)
-    raceCars[5].moveCar(79, 2135)
-    /*Output and observe the number of instances created*/
-    println("Midget Car Instances: " + FlyweightMidgetCar.num)
-    println("Sprint Car Instances: " + FlyweightSprintCar.num)
-}
 
-abstract class RaceCar {
-    var name: String? = null
-    var speed = 0
-    var horsePower = 0
+    val tableNumbers = (1..orders.size).toList()
 
-    abstract fun moveCar(currentX: Int, currentY: Int, newX: Int, newY: Int)
-}
-
-class FlyweightMidgetCar : RaceCar() {
-    init {
-        num++
+    // Serve coffees based on orders
+    for ((index, order) in orders.withIndex()) {
+        val flavor = factory.getCoffeeFlavor(order)
+        flavor.serveCoffee(tableNumbers[index])
     }
 
-    override fun moveCar(currentX: Int, currentY: Int, newX: Int, newY: Int) {
-        println("New location of $name is X$newX - Y$newY")
-    }
+    println("Total coffee flavors made: ${factory.getTotalCoffeeFlavorsMade()}")
+}
 
-    companion object {
-        var num = 0
+// Flyweight interface
+interface CoffeeOrder {
+    fun serveCoffee(tableNumber: Int)
+}
+
+// Concrete flyweight
+class CoffeeFlavor(private val flavorName: String) : CoffeeOrder {
+    override fun serveCoffee(tableNumber: Int) {
+        println("Serving $flavorName coffee to table number $tableNumber")
     }
 }
 
-class FlyweightSprintCar : RaceCar() {
-    init {
-        num++
+// Flyweight factory
+class CoffeeFlavorFactory {
+    private val flavors: MutableMap<String, CoffeeFlavor> = mutableMapOf()
+
+    fun getCoffeeFlavor(flavorName: String): CoffeeFlavor {
+        return flavors.getOrPut(flavorName) { CoffeeFlavor(flavorName) }
     }
 
-    override fun moveCar(currentX: Int, currentY: Int, newX: Int, newY: Int) {
-        println("New location of $name is X$newX - Y$newY")
-    }
-
-    companion object {
-        var num = 0
-    }
-}
-
-object CarFactory {
-
-    private val flyweights: MutableMap<String, RaceCar> = HashMap()
-
-    fun getRaceCar(key: String): RaceCar? {
-        if (flyweights.containsKey(key)) {
-            return flyweights[key]
-        }
-        val raceCar: RaceCar
-        when (key) {
-            "Midget" -> {
-                raceCar = FlyweightMidgetCar()
-                raceCar.name = "Midget Car"
-                raceCar.speed = 140
-                raceCar.horsePower = 400
-            }
-            "Sprint" -> {
-                raceCar = FlyweightSprintCar()
-                raceCar.name = "Sprint Car"
-                raceCar.speed = 160
-                raceCar.horsePower = 1000
-            }
-            else -> throw IllegalArgumentException("Unsupported car type.")
-        }
-        flyweights[key] = raceCar
-        return raceCar
-    }
-}
-
-class RaceCarClient(name: String?) {
-    private val raceCar: RaceCar?
-    private var currentX = 0
-    private var currentY = 0
-
-    init {
-        raceCar = getRaceCar(name!!)
-    }
-
-    fun moveCar(newX: Int, newY: Int) {
-        raceCar!!.moveCar(
-            currentX,
-            currentY, newX, newY
-        )
-        currentX = newX
-        currentY = newY
+    fun getTotalCoffeeFlavorsMade(): Int {
+        return flavors.size
     }
 }
